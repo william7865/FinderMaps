@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet cluster overrides for dark theme */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(245, 158, 11, 0.3) !important;
+}
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background-color: rgba(245, 158, 11, 0.8) !important;
+  color: #1c1917 !important;
+  font-weight: bold !important;
+}
+
+/* Leaflet dark theme */
+.leaflet-container {
+  background: #1c1917;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #44403c;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #78716c;
+}
