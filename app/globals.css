@@ -1,0 +1,314 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Instrument+Serif:ital@0;1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════
+   FORKMAP — Design System v2.0
+   "Warm Paper" — Light premium, not harsh white
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ── Surfaces: warm paper whites ── */
+  --surface-0:   #faf9f7;   /* app bg — warm off-white */
+  --surface-1:   #ffffff;   /* card surface */
+  --surface-2:   #f5f3f0;   /* subtle bg */
+  --surface-3:   #eeece8;   /* muted / pressed */
+  --surface-4:   #e5e2dc;   /* dividers */
+
+  /* ── Text ── */
+  --ink-1:  #1c1917;   /* primary — almost black, warm */
+  --ink-2:  #57534e;   /* secondary */
+  --ink-3:  #a8a29e;   /* muted */
+  --ink-4:  #d6d3d1;   /* faint / placeholder */
+
+  /* ── Brand — Terracotta ── */
+  --brand:        #e05a1e;
+  --brand-hover:  #c94e18;
+  --brand-light:  #fff0ea;
+  --brand-mid:    #ffdacc;
+  --brand-text:   #9a2d08;
+
+  /* ── Accent — Saffron gold ── */
+  --accent:       #d4880a;
+  --accent-light: #fef3d6;
+  --accent-text:  #854d04;
+
+  /* ── Semantic ── */
+  --green:        #1b7f4f;
+  --green-light:  #e5f5ed;
+  --green-text:   #0f5232;
+  --red:          #c53030;
+  --red-light:    #fde8e8;
+  --blue:         #1d65c8;
+  --blue-light:   #deeeff;
+  --blue-text:    #0f3d82;
+
+  /* ── Borders ── */
+  --b1: rgba(28,25,23,0.07);   /* barely visible */
+  --b2: rgba(28,25,23,0.11);   /* default */
+  --b3: rgba(28,25,23,0.18);   /* emphasized */
+
+  /* ── Shadows ── */
+  --s0: none;
+  --s1: 0 1px 3px rgba(28,25,23,0.05), 0 1px 2px rgba(28,25,23,0.04);
+  --s2: 0 3px 10px rgba(28,25,23,0.07), 0 1px 3px rgba(28,25,23,0.05);
+  --s3: 0 8px 24px rgba(28,25,23,0.09), 0 2px 6px rgba(28,25,23,0.05);
+  --s4: 0 20px 50px rgba(28,25,23,0.12), 0 6px 14px rgba(28,25,23,0.06);
+  --s-brand: 0 4px 18px rgba(224,90,30,0.22);
+  --s-focus: 0 0 0 3px rgba(224,90,30,0.25);
+
+  /* ── Motion ── */
+  --spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --t1: 100ms;
+  --t2: 180ms;
+  --t3: 280ms;
+  --t4: 420ms;
+
+  /* ── Radius ── */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+  --r-pill: 999px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%; width: 100%; overflow: hidden;
+  background: var(--surface-0);
+  color: var(--ink-1);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+/* ── Focus ── */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--s-focus);
+}
+
+/* ── Leaflet overrides — Carto Voyager light ── */
+.leaflet-container {
+  background: #f0ebe3 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  cursor: default !important;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--s3) !important;
+  overflow: hidden;
+  margin-right: 16px !important;
+  margin-bottom: 16px !important;
+}
+.leaflet-control-zoom a {
+  background: var(--surface-1) !important;
+  color: var(--ink-2) !important;
+  border-bottom: 1px solid var(--b1) !important;
+  width: 38px !important; height: 38px !important;
+  line-height: 38px !important; font-size: 18px !important;
+  font-weight: 300 !important;
+  transition: background var(--t1) ease !important;
+}
+.leaflet-control-zoom a:hover {
+  background: var(--surface-2) !important;
+  color: var(--ink-1) !important;
+}
+
+.leaflet-tooltip {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--b2) !important;
+  color: var(--ink-1) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 5px 10px !important;
+  border-radius: var(--r-sm) !important;
+  box-shadow: var(--s2) !important;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip::before { display: none !important; }
+.leaflet-attribution-flag { display: none !important; }
+.leaflet-control-attribution {
+  background: rgba(250,249,247,0.8) !important;
+  color: var(--ink-3) !important;
+  font-size: 9px !important;
+  backdrop-filter: blur(8px);
+  border-radius: var(--r-sm) 0 0 0 !important;
+  padding: 3px 8px !important;
+  border: none !important;
+}
+.leaflet-control-attribution a { color: var(--ink-3) !important; text-decoration: none; }
+.leaflet-control-attribution a:hover { color: var(--ink-2) !important; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
+
+/* ── Skeleton ── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-3) 0%,
+    var(--surface-2) 40%,
+    var(--surface-3) 80%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+
+/* ── Animations ── */
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes markerPop {
+  0%  { transform: translateY(6px) scale(0.7); opacity: 0; }
+  60% { transform: translateY(-2px) scale(1.05); }
+  100%{ transform: translateY(0)  scale(1);   opacity: 1; }
+}
+
+.anim-fade-up    { animation: fadeUp var(--t3) var(--ease-out) both; }
+.anim-slide-right{ animation: slideInRight var(--t3) var(--ease-out) both; }
+.anim-scale-in   { animation: scaleIn var(--t4) var(--spring) both; }
+
+/* ═══════════════════════════════════════════════
+   Micro-interactions & Auth additions
+   ═══════════════════════════════════════════════ */
+
+/* Heart burst animation */
+@keyframes heartBeat {
+  0%   { transform: scale(1); }
+  15%  { transform: scale(1.35); }
+  30%  { transform: scale(0.9); }
+  45%  { transform: scale(1.2); }
+  60%  { transform: scale(1); }
+}
+@keyframes heartUnbeat {
+  0%  { transform: scale(1); }
+  40% { transform: scale(0.75); }
+  70% { transform: scale(1.05); }
+  100%{ transform: scale(1); }
+}
+@keyframes heartParticle {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* Card interactions */
+@keyframes cardPress {
+  0%  { transform: scale(1); }
+  40% { transform: scale(0.985); }
+  100%{ transform: scale(1); }
+}
+
+/* Toast */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0)    scale(1);    max-height: 60px; }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.96); max-height: 0; }
+}
+
+/* Auth modal */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Enrich sweep (already defined in page but make global) */
+@keyframes enrichSweep {
+  0%   { left: -50%; }
+  100% { left: 100%; }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Input focus ring */
+.input-field {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--b2);
+  background: var(--surface-2);
+  color: var(--ink-1);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+.input-field:focus {
+  border-color: var(--brand);
+  background: var(--surface-1);
+  box-shadow: var(--s-focus);
+}
+.input-field::placeholder { color: var(--ink-4); }
+
+/* Btn variants */
+.btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 11px 16px;
+  border-radius: var(--r-md); border: none; cursor: pointer;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  background: var(--brand); color: white;
+  box-shadow: var(--s-brand);
+  transition: background 120ms ease, transform 80ms ease, box-shadow 120ms ease;
+}
+.btn-primary:hover  { background: var(--brand-hover); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-secondary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 10px 16px;
+  border-radius: var(--r-md); cursor: pointer;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  background: var(--surface-1); color: var(--ink-2);
+  border: 1.5px solid var(--b2);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.btn-secondary:hover { background: var(--surface-2); border-color: var(--b3); }
