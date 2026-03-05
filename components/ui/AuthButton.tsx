@@ -115,13 +115,22 @@ function DropdownPanel({ anchorRef, auth, onClose }: PanelProps) {
 
       {/* Items */}
       <div style={{ padding: "5px 0" }}>
+        <a href="/account" onClick={onClose}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", transition: "background 80ms" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My account
+        </a>
+
         <a href="/favorites" onClick={onClose}
           style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", transition: "background 80ms" }}
           onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
           onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
         >
           <span style={{ color: "var(--accent)", display: "flex" }}><IcoHeart /></span>
-          My saved restaurants
+          Saved places
         </a>
 
         <div style={{ height: 1, background: "var(--b1)", margin: "3px 8px" }}/>
