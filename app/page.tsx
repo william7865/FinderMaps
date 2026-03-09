@@ -1,32 +1,14 @@
 "use client";
 
-<<<<<<< HEAD
-// ============================================================
-// app/page.tsx — Main map page
-// ============================================================
-
-import dynamic from "next/dynamic";
-import { useState, useCallback } from "react";
-import type { PlaceCard, FilterState } from "@/types";
-import { useRestaurants } from "@/lib/hooks/useRestaurants";
-import FiltersPanel from "@/components/filters/FiltersPanel";
-import PlaceList from "@/components/place/PlaceList";
-import PlaceDetail from "@/components/place/PlaceDetail";
-
-// Leaflet must be loaded dynamically (no SSR)
-const MapView = dynamic(() => import("@/components/map/MapView"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 bg-stone-900 flex items-center justify-center">
-      <div className="text-amber-400 font-mono text-sm animate-pulse">Loading map...</div>
-=======
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import type { PlaceCard, FilterState } from "@/types";
 import { useRestaurants } from "@/lib/hooks/useRestaurants";
 import { useRouteCache, type TransportMode } from "@/lib/hooks/useRouteCache";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useToast } from "@/lib/hooks/useToast";
+import { useIsMobile } from "@/lib/hooks/useMediaQuery";
 import FiltersPanel from "@/components/filters/FiltersPanel";
 import PlaceList from "@/components/place/PlaceList";
 import PlaceDetail from "@/components/place/PlaceDetail";
@@ -34,6 +16,8 @@ import StartPanel from "@/components/location/StartPanel";
 import ToastStack from "@/components/ui/ToastStack";
 import AuthButton from "@/components/ui/AuthButton";
 import AuthModal from "@/components/ui/AuthModal";
+import BottomSheet from "@/components/ui/BottomSheet";
+import MapLoadingOverlay from "@/components/states/MapLoadingOverlay";
 import type { MapViewHandle } from "@/components/map/MapView";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -42,95 +26,10 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
     <div style={{ flex:1, background:"var(--surface-0)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12 }}>
       <div style={{ width:36,height:36,border:"3px solid var(--surface-4)",borderTop:"3px solid var(--brand)",borderRadius:"50%",animation:"spin 0.7s linear infinite" }}/>
       <span style={{ fontSize:12,color:"var(--ink-3)",fontWeight:600,letterSpacing:"0.04em" }}>Loading map…</span>
->>>>>>> f265c4a (FinderMaps)
     </div>
   ),
 });
 
-<<<<<<< HEAD
-export default function HomePage() {
-  const {
-    filteredPlaces,
-    loading,
-    error,
-    fetchRestaurants,
-    applyClientFilters,
-    toggleFavorite,
-  } = useRestaurants();
-
-  const [selectedPlace, setSelectedPlace] = useState<PlaceCard | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<FilterState>({ sortBy: "score" });
-  const [showFilters, setShowFilters] = useState(false);
-
-  const handleFiltersChange = useCallback(
-    (newFilters: FilterState) => {
-      setFilters(newFilters);
-      applyClientFilters(newFilters);
-    },
-    [applyClientFilters]
-  );
-
-  return (
-    <div className="h-screen w-screen flex flex-col bg-stone-950 text-stone-100 overflow-hidden">
-      {/* Header */}
-      <header className="h-14 flex items-center px-4 gap-4 border-b border-stone-800 bg-stone-950/90 backdrop-blur z-50 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-amber-400 text-xl">🍽</span>
-          <span className="font-bold text-stone-100 tracking-tight">
-            resto<span className="text-amber-400">finder</span>
-          </span>
-        </div>
-        <div className="flex-1" />
-        <button
-          onClick={() => setShowFilters((v) => !v)}
-          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-            showFilters
-              ? "bg-amber-400 text-stone-950"
-              : "bg-stone-800 text-stone-300 hover:bg-stone-700"
-          }`}
-        >
-          Filters {Object.keys(filters).filter((k) => k !== "sortBy" && filters[k as keyof FilterState] != null).length > 0 && "•"}
-        </button>
-        <a
-          href="/favorites"
-          className="px-3 py-1.5 rounded text-xs font-medium bg-stone-800 text-stone-300 hover:bg-stone-700 transition-colors"
-        >
-          ♥ Favorites
-        </a>
-      </header>
-
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left panel: list + filters */}
-        <div className="w-80 flex flex-col border-r border-stone-800 flex-shrink-0 overflow-hidden">
-          {showFilters && (
-            <div className="border-b border-stone-800">
-              <FiltersPanel filters={filters} onChange={handleFiltersChange} />
-            </div>
-          )}
-
-          {/* Stats bar */}
-          <div className="px-3 py-2 bg-stone-900 border-b border-stone-800 flex items-center justify-between text-xs text-stone-400">
-            <span>
-              {loading ? (
-                <span className="text-amber-400 animate-pulse">Searching…</span>
-              ) : (
-                <span>{filteredPlaces.length} restaurants</span>
-              )}
-            </span>
-            {error && <span className="text-red-400 truncate ml-2">{error}</span>}
-          </div>
-
-          {/* Place list */}
-          <div className="flex-1 overflow-y-auto">
-            <PlaceList
-              places={filteredPlaces}
-              selectedId={selectedPlace?.osm_id}
-              hoveredId={hoveredId}
-              onHover={setHoveredId}
-              onSelect={setSelectedPlace}
-              onToggleFavorite={toggleFavorite}
-=======
 // ── Inline SVG icons ───────────────────────────────────────
 const IcoSearch = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -168,8 +67,10 @@ function EnrichBar({ active }: { active: boolean }) {
 }
 
 export default function HomePage() {
-  const auth  = useAuth();
-  const toast = useToast();
+  const auth        = useAuth();
+  const toast       = useToast();
+  const isMobile    = useIsMobile();
+  const searchParams = useSearchParams();
 
   const { filteredPlaces, loading, enriching, error, fetchRestaurants, applyClientFilters, toggleFavorite, favoriteIds } = useRestaurants();
 
@@ -228,6 +129,13 @@ export default function HomePage() {
   }, [toast]);
 
   useEffect(() => { if (!locateDone.current) { locateDone.current = true; locate(); } }, [locate]);
+
+  // Open auth modal if redirected from a protected page with ?auth=required
+  useEffect(() => {
+    if (searchParams.get("auth") === "required" && !auth.loading && !auth.user) {
+      setShowAuthModal(true);
+    }
+  }, [searchParams, auth.loading, auth.user]);
 
   // ── Address location
   const handleLocationChange = useCallback((lat: number, lon: number, label: string) => {
@@ -476,10 +384,10 @@ export default function HomePage() {
       {/* ════════════════ BODY ════════════════ */}
       <div style={{ flex:1,display:"flex",overflow:"hidden",position:"relative",marginTop:pinDropActive?34:0,transition:"margin-top 200ms var(--ease-out)" }}>
 
-        {/* ════ SIDEBAR ════ */}
+        {/* ════ SIDEBAR — hidden on mobile (bottom sheet used instead) ════ */}
         <div style={{
           width:296, flexShrink:0,
-          display:"flex", flexDirection:"column",
+          display: isMobile ? "none" : "flex", flexDirection:"column",
           borderRight:"1px solid rgba(28,25,23,0.07)",
           background:"var(--surface-1)",
           overflow:"hidden",
@@ -552,22 +460,10 @@ export default function HomePage() {
               onHover={setHoveredId}
               onSelect={handleMarkerClick}
               onToggleFavorite={handleToggleFavorite}
->>>>>>> f265c4a (FinderMaps)
             />
           </div>
         </div>
 
-<<<<<<< HEAD
-        {/* Map */}
-        <div className="flex-1 relative">
-          <MapView
-            places={filteredPlaces}
-            selectedId={selectedPlace?.osm_id}
-            hoveredId={hoveredId}
-            onMoveEnd={fetchRestaurants}
-            onMarkerClick={setSelectedPlace}
-            onMarkerHover={setHoveredId}
-=======
         {/* ════ MAP ════ */}
         <div style={{ flex:1,position:"relative",overflow:"hidden" }}>
           <MapView
@@ -582,21 +478,46 @@ export default function HomePage() {
             onPinDrop={handlePinDrop}
             showSearchHere={showSearchHere}
             onSearchHere={doSearchHere}
->>>>>>> f265c4a (FinderMaps)
+          />
+          <MapLoadingOverlay
+            loading={loading}
+            enriching={enriching}
+            routeLoading={routeLoading}
           />
         </div>
       </div>
 
-<<<<<<< HEAD
-      {/* Place detail panel (slide-in) */}
-      {selectedPlace && (
-        <PlaceDetail
-          place={selectedPlace}
-          onClose={() => setSelectedPlace(null)}
-          onToggleFavorite={toggleFavorite}
-        />
+      {/* ════════════════ MOBILE BOTTOM SHEET ════════════════ */}
+      {isMobile && (
+        <BottomSheet
+          title="Restaurants"
+          subtitle={loading ? "Loading…" : `${visiblePlaces.length} found`}
+          defaultSnap="half"
+        >
+          <StartPanel
+            userLocation={userLocation}
+            locationLabel={locationLabel}
+            onLocationChange={handleLocationChange}
+            onLocateMe={locate}
+            locating={locating}
+            locateError={locateError}
+          />
+          <PlaceList
+            places={visiblePlaces}
+            selectedId={selectedPlace?.osm_id}
+            hoveredId={hoveredId}
+            onHover={setHoveredId}
+            onSelect={handleMarkerClick}
+            onToggleFavorite={handleToggleFavorite}
+            loading={loading}
+            error={error}
+            nameQuery={nameQuery}
+            hasActiveFilters={activeCount > 0}
+            onRetry={() => mapRef.current?.getBounds() && fetchRestaurants(mapRef.current.getBounds()!)}
+          />
+        </BottomSheet>
       )}
-=======
+
       {/* Detail drawer */}
       {selectedPlace && (
         <PlaceDetail
@@ -631,7 +552,6 @@ export default function HomePage() {
         .anim-slide-right { animation: slideInRight 300ms cubic-bezier(0.16,1,0.3,1) both; }
         @keyframes slideInRight { from{opacity:0;transform:translateX(18px)} to{opacity:1;transform:translateX(0)} }
       `}</style>
->>>>>>> f265c4a (FinderMaps)
     </div>
   );
 }

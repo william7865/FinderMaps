@@ -1,108 +1,14 @@
 "use client";
-<<<<<<< HEAD
-
-// ============================================================
-// components/place/PlaceDetail.tsx — Slide-in detail panel
-// ============================================================
-
-import type { PlaceCard } from "@/types";
-import { getFsqPhotoUrl } from "@/lib/foursquare";
-=======
 import { useEffect, useState } from "react";
 import HeartButton from "@/components/ui/HeartButton";
 import type { PlaceCard } from "@/types";
 
 type TransportMode = "foot" | "bike" | "car";
 interface RouteResult { duration:number; distance:number; coords:[number,number][]; }
->>>>>>> f265c4a (FinderMaps)
 
 interface Props {
   place: PlaceCard;
   onClose: () => void;
-<<<<<<< HEAD
-  onToggleFavorite: (place: PlaceCard) => void;
-}
-
-export default function PlaceDetail({ place, onClose, onToggleFavorite }: Props) {
-  const photos = place.fsq?.photos ?? [];
-  const mainPhoto = photos[0] ? getFsqPhotoUrl(photos[0], "600x400") : null;
-
-  return (
-    <div className="fixed bottom-0 right-0 w-96 max-h-[70vh] bg-stone-900 border-l border-t border-stone-700 rounded-tl-xl shadow-2xl z-50 flex flex-col overflow-hidden">
-      {/* Header image */}
-      {mainPhoto && (
-        <div className="h-40 relative flex-shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mainPhoto} alt={place.name} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-900 to-transparent" />
-        </div>
-      )}
-
-      {/* Top bar */}
-      <div className={`flex items-start justify-between px-4 pt-3 ${mainPhoto ? "-mt-8 relative" : ""}`}>
-        <div>
-          <h2 className="text-lg font-bold text-stone-100 leading-tight">{place.name}</h2>
-          {place.cuisine && (
-            <p className="text-amber-400 text-sm">{place.cuisine}</p>
-          )}
-          {!place.cuisine && place.fsq?.categories?.[0] && (
-            <p className="text-amber-400 text-sm">{place.fsq.categories[0].name}</p>
-          )}
-        </div>
-        <div className="flex gap-2 ml-2 flex-shrink-0">
-          <button
-            onClick={() => onToggleFavorite(place)}
-            className={`text-lg transition-colors ${
-              place.is_favorite ? "text-purple-400" : "text-stone-500 hover:text-stone-300"
-            }`}
-          >
-            ♥
-          </button>
-          <button onClick={onClose} className="text-stone-500 hover:text-stone-300 text-lg">
-            ✕
-          </button>
-        </div>
-      </div>
-
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
-        {/* Stats row */}
-        <div className="flex items-center gap-3 flex-wrap mt-2">
-          {place.fsq?.rating != null && (
-            <div className="flex items-center gap-1">
-              <span className="text-amber-400 text-sm">★</span>
-              <span className="text-stone-100 font-semibold">{place.fsq.rating.toFixed(1)}</span>
-              <span className="text-stone-400 text-xs">/10</span>
-              {place.fsq.total_ratings && (
-                <span className="text-stone-500 text-xs">({place.fsq.total_ratings})</span>
-              )}
-            </div>
-          )}
-          {place.fsq?.price != null && (
-            <span className="text-stone-300 text-sm">
-              {"$".repeat(place.fsq.price)}
-              <span className="opacity-30">{"$".repeat(4 - place.fsq.price)}</span>
-            </span>
-          )}
-          {place.open_now !== undefined && (
-            <span
-              className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                place.open_now
-                  ? "bg-green-900/50 text-green-400"
-                  : "bg-red-900/50 text-red-400"
-              }`}
-            >
-              {place.open_now ? "Open now" : "Closed"}
-            </span>
-          )}
-          {place.distance != null && (
-            <span className="text-stone-500 text-xs">
-              {place.distance < 1000
-                ? `${Math.round(place.distance)}m away`
-                : `${(place.distance / 1000).toFixed(1)}km away`}
-            </span>
-          )}
-=======
   onToggleFavorite: (p: PlaceCard) => void;
   routeResult?: RouteResult | null;
   routeLoading?: boolean;
@@ -361,69 +267,28 @@ export default function PlaceDetail({
               </div>
             </div>
           )}
->>>>>>> f265c4a (FinderMaps)
         </div>
 
         {/* Description */}
         {place.fsq?.description && (
-<<<<<<< HEAD
-          <p className="text-stone-400 text-sm leading-relaxed">{place.fsq.description}</p>
-=======
           <div>
             <Label>About</Label>
             <p style={{ margin:0,fontSize:13,color:"var(--ink-2)",lineHeight:1.7,letterSpacing:"-0.01em" }}>
               {place.fsq.description}
             </p>
           </div>
->>>>>>> f265c4a (FinderMaps)
         )}
 
         {/* Hours */}
         {place.fsq?.hours?.display && (
-<<<<<<< HEAD
-          <div className="bg-stone-800/60 rounded-lg p-3">
-            <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1">
-              Hours
-            </h4>
-            <p className="text-stone-300 text-sm">{place.fsq.hours.display}</p>
-=======
           <div>
             <Label><span style={{ display:"flex",alignItems:"center",gap:4 }}><IcoClock />Hours</span></Label>
             <p style={{ margin:0,fontSize:13,color:"var(--ink-2)" }}>{place.fsq.hours.display}</p>
->>>>>>> f265c4a (FinderMaps)
           </div>
         )}
 
         {/* Address */}
         {place.address && (
-<<<<<<< HEAD
-          <div className="flex items-start gap-2">
-            <span className="text-stone-500 mt-0.5">📍</span>
-            <p className="text-stone-300 text-sm">{place.address}</p>
-          </div>
-        )}
-
-        {/* Contact */}
-        <div className="space-y-1">
-          {(place.fsq?.website ?? place.website) && (
-            <a
-              href={place.fsq?.website ?? place.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm transition-colors"
-            >
-              <span>🔗</span>
-              <span className="truncate">{(place.fsq?.website ?? place.website)?.replace(/^https?:\/\//, "")}</span>
-            </a>
-          )}
-          {(place.fsq?.tel ?? place.phone) && (
-            <a
-              href={`tel:${place.fsq?.tel ?? place.phone}`}
-              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm"
-            >
-              <span>📞</span>
-              <span>{place.fsq?.tel ?? place.phone}</span>
-=======
           <div style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"11px 13px",borderRadius:12,background:"rgba(28,25,23,0.03)",border:"1px solid rgba(28,25,23,0.07)" }}>
             <span style={{ flexShrink:0,marginTop:1,color:"var(--ink-3)" }}><IcoMap /></span>
             <span style={{ fontSize:13,color:"var(--ink-2)",lineHeight:1.55 }}>{place.address}</span>
@@ -445,26 +310,14 @@ export default function PlaceDetail({
             <a href={`tel:${place.fsq?.tel ?? place.phone}`}
               style={{ display:"flex",alignItems:"center",gap:5,padding:"11px 14px",borderRadius:10,background:"rgba(28,25,23,0.04)",border:"1.5px solid rgba(28,25,23,0.1)",color:"var(--ink-2)",textDecoration:"none",fontSize:12,fontWeight:600,whiteSpace:"nowrap" }}>
               <IcoPhone /> Call
->>>>>>> f265c4a (FinderMaps)
             </a>
           )}
         </div>
 
-<<<<<<< HEAD
-        {/* OSM link */}
-        <a
-          href={`https://www.openstreetmap.org/${place.osm_type}/${place.osm_id.split("/")[1]}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-stone-600 hover:text-stone-400 transition-colors block"
-        >
-          View on OpenStreetMap →
-=======
         <a href={`https://www.openstreetmap.org/${place.osm_type}/${place.osm_id.split("/")[1]}`}
           target="_blank" rel="noopener noreferrer"
           style={{ display:"block",textAlign:"center",fontSize:10,color:"var(--ink-4)",textDecoration:"none",letterSpacing:"0.02em" }}>
           View on OpenStreetMap
->>>>>>> f265c4a (FinderMaps)
         </a>
       </div>
     </div>

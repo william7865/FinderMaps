@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-"use client";
-
-// ============================================================
-// components/place/PlaceList.tsx — Scrollable restaurant list
-// ============================================================
-
-import type { PlaceCard } from "@/types";
-import PlaceCard from "./PlaceCard";
-
-interface PlaceListProps {
-=======
 // PlaceList — virtualized, exports nothing else
 "use client";
 import { memo } from "react";
@@ -18,51 +6,10 @@ import PlaceCardItem, { ITEM_HEIGHT } from "./PlaceCard";
 import { useVirtualList } from "@/lib/hooks/useVirtualList";
 
 interface Props {
->>>>>>> f265c4a (FinderMaps)
   places: PlaceCard[];
   selectedId?: string;
   hoveredId?: string | null;
   onHover: (id: string | null) => void;
-<<<<<<< HEAD
-  onSelect: (place: PlaceCard) => void;
-  onToggleFavorite: (place: PlaceCard) => void;
-}
-
-export default function PlaceList({
-  places,
-  selectedId,
-  hoveredId,
-  onHover,
-  onSelect,
-  onToggleFavorite,
-}: PlaceListProps) {
-  if (places.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-40 text-stone-500 text-sm gap-2">
-        <span className="text-2xl">🗺️</span>
-        <span>Move the map to discover restaurants</span>
-      </div>
-    );
-  }
-
-  return (
-    <ul className="divide-y divide-stone-800">
-      {places.map((place) => (
-        <PlaceCard
-          key={place.osm_id}
-          place={place}
-          isSelected={place.osm_id === selectedId}
-          isHovered={place.osm_id === hoveredId}
-          onHover={() => onHover(place.osm_id)}
-          onLeave={() => onHover(null)}
-          onClick={() => onSelect(place)}
-          onToggleFavorite={() => onToggleFavorite(place)}
-        />
-      ))}
-    </ul>
-  );
-}
-=======
   onSelect: (p: PlaceCard) => void;
   onToggleFavorite: (p: PlaceCard) => void;
 }
@@ -110,4 +57,3 @@ const PlaceList = memo(function PlaceList({ places, selectedId, hoveredId, onHov
 });
 
 export default PlaceList;
->>>>>>> f265c4a (FinderMaps)
