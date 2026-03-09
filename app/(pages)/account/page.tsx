@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 import type { FavoriteRow } from "@/types";
 
 // ── Icons ──────────────────────────────────────────────────
@@ -132,10 +133,28 @@ function DeleteAccountModal({ email, onConfirm, onCancel }: { email: string; onC
 
 // ── Main ───────────────────────────────────────────────────
 export default function AccountPage() {
-  const auth   = useAuth();
+  const { isReady, auth } = useAuthGuard();
+
+  if (!isReady) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--surface-0)", fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 36, height: 36, border: "3px solid var(--surface-4)", borderTop: "3px solid var(--brand)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }}/>
+          <span style={{ fontSize: 13, color: "var(--ink-3)", fontWeight: 600 }}>Loading account…</span>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return <AccountPageInner auth={auth} />;
+}
+
+function AccountPageInner({ auth }: { auth: ReturnType<typeof useAuthGuard>["auth"] }) {
   const router = useRouter();
   const [favorites,      setFavorites]      = useState<FavoriteRow[]>([]);
   const [favLoading,     setFavLoading]     = useState(true);
+  const [favError,       setFavError]       = useState<string|null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [signingOut,     setSigningOut]     = useState(false);
 
@@ -146,10 +165,7 @@ export default function AccountPage() {
       .finally(() => setFavLoading(false));
   }, []);
 
-  // Redirect to home if not logged in
-  useEffect(() => {
-    if (!auth.loading && !auth.user) router.replace("/");
-  }, [auth.loading, auth.user, router]);
+  /// Auth guard handled by useAuthGuard in parent
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -358,6 +374,21 @@ export default function AccountPage() {
           onCancel={() => setShowDeleteModal(false)}
         />
       )}
+
+      {/* Legal footer */}
+      <footer style={{ borderTop: "1px solid rgba(28,25,23,0.07)", padding: "18px 20px", display: "flex", flexWrap: "wrap", gap: "6px 16px", justifyContent: "center", marginTop: 8 }}>
+        {([
+          { href: "/", label: "← Map" },
+          { href: "/privacy", label: "Privacy" },
+          { href: "/terms", label: "Terms" },
+          { href: "/attribution", label: "Data attribution" },
+        ] as {href:string;label:string}[]).map(({ href, label }) => (
+          <Link key={href} href={href} style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-3)", textDecoration: "none" }}>
+            {label}
+          </Link>
+        ))}
+        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>© {new Date().getFullYear()} Forkmap</span>
+      </footer>
 
       <style>{`
         @keyframes fadeUp   { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }

@@ -177,7 +177,7 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView(
       });
 
       L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution:'© <a href="https://carto.com">CARTO</a> © <a href="https://openstreetmap.org">OSM</a>',
+        attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a> | <a href="/attribution">Data attribution</a>',
         subdomains:"abcd", maxZoom:20,
       }).addTo(map);
 

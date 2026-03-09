@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FavoriteRow } from "@/types";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 
 // ── Icons ──────────────────────────────────────────────────
 const IcoArrowLeft = () => (
@@ -243,20 +244,30 @@ function FavCard({
 type SortKey = "date_desc" | "date_asc" | "name" | "cuisine";
 
 export default function FavoritesPage() {
-  const auth = useAuth();
+  const { isReady, auth } = useAuthGuard();
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteRow[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [sortBy,    setSortBy]    = useState<SortKey>("date_desc");
   const [toDelete,  setToDelete]  = useState<FavoriteRow | null>(null);
 
-  useEffect(() => {
+  const loadFavorites = () => {
+    setLoading(true);
+    setFetchError(null);
     fetch("/api/favorites")
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`Error ${r.status}`); return r.json(); })
       .then(d => setFavorites(d.data ?? []))
+      .catch(e => setFetchError(e.message ?? "Failed to load saved places"))
       .finally(() => setLoading(false));
-  }, []);
+  };
 
+  useEffect(() => {
+    if (isReady) loadFavorites();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady]);
+
+  // ALL hooks must be called before any conditional return
   const sorted = useMemo(() => {
     const arr = [...favorites];
     switch (sortBy) {
@@ -267,6 +278,19 @@ export default function FavoritesPage() {
       default:          return arr;
     }
   }, [favorites, sortBy]);
+
+  // While auth is loading or redirecting — AFTER all hooks
+  if (!isReady) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--surface-0)", fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 36, height: 36, border: "3px solid var(--surface-4)", borderTop: "3px solid var(--brand)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }}/>
+          <span style={{ fontSize: 13, color: "var(--ink-3)", fontWeight: 600 }}>Loading…</span>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   const handleRemoveConfirm = async () => {
     if (!toDelete) return;
@@ -377,6 +401,20 @@ export default function FavoritesPage() {
           </div>
         )}
 
+        {/* Error state */}
+        {fetchError && !loading && (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: "var(--red-light)", border: "1px solid rgba(197,48,48,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "var(--ink-2)" }}>Could not load saved places</p>
+            <p style={{ margin: "0 0 18px", fontSize: 12, color: "var(--ink-3)" }}>{fetchError}</p>
+            <button onClick={loadFavorites} style={{ padding: "8px 18px", borderRadius: 999, border: "1.5px solid rgba(197,48,48,0.3)", background: "var(--red-light)", color: "var(--red)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Empty state */}
         {!loading && !favorites.length && (
           <div style={{ textAlign: "center", padding: "64px 0 40px", animation: "fadeUp 300ms var(--ease-out) both" }}>
@@ -416,6 +454,21 @@ export default function FavoritesPage() {
         />
       )}
 
+      {/* Legal footer */}
+      <footer style={{ borderTop: "1px solid rgba(28,25,23,0.07)", padding: "18px 20px", display: "flex", flexWrap: "wrap", gap: "6px 16px", justifyContent: "center", marginTop: 8 }}>
+        {[
+          { href: "/", label: "← Map" },
+          { href: "/privacy", label: "Privacy" },
+          { href: "/terms", label: "Terms" },
+          { href: "/attribution", label: "Data attribution" },
+        ].map(({ href, label }) => (
+          <Link key={href} href={href} style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-3)", textDecoration: "none" }}>
+            {label}
+          </Link>
+        ))}
+        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>© {new Date().getFullYear()} Forkmap · Data © OpenStreetMap contributors</span>
+      </footer>
+
       <style>{`
         @keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
@@ -430,6 +483,7 @@ export default function FavoritesPage() {
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 2px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

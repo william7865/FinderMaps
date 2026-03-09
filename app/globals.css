@@ -312,3 +312,20 @@ html, body {
   transition: background 120ms ease, border-color 120ms ease;
 }
 .btn-secondary:hover { background: var(--surface-2); border-color: var(--b3); }
+
+/* ── Mobile safe areas ────────────────────────────────────── */
+@supports (padding: max(0px)) {
+  .safe-bottom { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .safe-top    { padding-top:    max(0px,  env(safe-area-inset-top)); }
+}
+
+/* NOTE: html/body scroll is NOT locked globally.
+   The map page uses position:fixed;inset:0 on its root div —
+   it self-contains scroll and never needs body overflow:hidden.
+   /account and /favorites must scroll freely. */
+@media (max-width: 767px) {
+  html, body {
+    overscroll-behavior-x: none;
+  }
+}
+

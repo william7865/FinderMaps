@@ -2,11 +2,13 @@
 
 import dynamic from "next/dynamic";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import type { PlaceCard, FilterState } from "@/types";
 import { useRestaurants } from "@/lib/hooks/useRestaurants";
 import { useRouteCache, type TransportMode } from "@/lib/hooks/useRouteCache";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useToast } from "@/lib/hooks/useToast";
+import { useIsMobile } from "@/lib/hooks/useMediaQuery";
 import FiltersPanel from "@/components/filters/FiltersPanel";
 import PlaceList from "@/components/place/PlaceList";
 import PlaceDetail from "@/components/place/PlaceDetail";
@@ -14,6 +16,8 @@ import StartPanel from "@/components/location/StartPanel";
 import ToastStack from "@/components/ui/ToastStack";
 import AuthButton from "@/components/ui/AuthButton";
 import AuthModal from "@/components/ui/AuthModal";
+import BottomSheet from "@/components/ui/BottomSheet";
+import MapLoadingOverlay from "@/components/states/MapLoadingOverlay";
 import type { MapViewHandle } from "@/components/map/MapView";
 
 const MapView = dynamic(() => import("@/components/map/MapView"), {
@@ -63,8 +67,10 @@ function EnrichBar({ active }: { active: boolean }) {
 }
 
 export default function HomePage() {
-  const auth  = useAuth();
-  const toast = useToast();
+  const auth        = useAuth();
+  const toast       = useToast();
+  const isMobile    = useIsMobile();
+  const searchParams = useSearchParams();
 
   const { filteredPlaces, loading, enriching, error, fetchRestaurants, applyClientFilters, toggleFavorite, favoriteIds } = useRestaurants();
 
@@ -123,6 +129,13 @@ export default function HomePage() {
   }, [toast]);
 
   useEffect(() => { if (!locateDone.current) { locateDone.current = true; locate(); } }, [locate]);
+
+  // Open auth modal if redirected from a protected page with ?auth=required
+  useEffect(() => {
+    if (searchParams.get("auth") === "required" && !auth.loading && !auth.user) {
+      setShowAuthModal(true);
+    }
+  }, [searchParams, auth.loading, auth.user]);
 
   // ── Address location
   const handleLocationChange = useCallback((lat: number, lon: number, label: string) => {
@@ -371,10 +384,10 @@ export default function HomePage() {
       {/* ════════════════ BODY ════════════════ */}
       <div style={{ flex:1,display:"flex",overflow:"hidden",position:"relative",marginTop:pinDropActive?34:0,transition:"margin-top 200ms var(--ease-out)" }}>
 
-        {/* ════ SIDEBAR ════ */}
+        {/* ════ SIDEBAR — hidden on mobile (bottom sheet used instead) ════ */}
         <div style={{
           width:296, flexShrink:0,
-          display:"flex", flexDirection:"column",
+          display: isMobile ? "none" : "flex", flexDirection:"column",
           borderRight:"1px solid rgba(28,25,23,0.07)",
           background:"var(--surface-1)",
           overflow:"hidden",
@@ -466,8 +479,44 @@ export default function HomePage() {
             showSearchHere={showSearchHere}
             onSearchHere={doSearchHere}
           />
+          <MapLoadingOverlay
+            loading={loading}
+            enriching={enriching}
+            routeLoading={routeLoading}
+          />
         </div>
       </div>
+
+      {/* ════════════════ MOBILE BOTTOM SHEET ════════════════ */}
+      {isMobile && (
+        <BottomSheet
+          title="Restaurants"
+          subtitle={loading ? "Loading…" : `${visiblePlaces.length} found`}
+          defaultSnap="half"
+        >
+          <StartPanel
+            userLocation={userLocation}
+            locationLabel={locationLabel}
+            onLocationChange={handleLocationChange}
+            onLocateMe={locate}
+            locating={locating}
+            locateError={locateError}
+          />
+          <PlaceList
+            places={visiblePlaces}
+            selectedId={selectedPlace?.osm_id}
+            hoveredId={hoveredId}
+            onHover={setHoveredId}
+            onSelect={handleMarkerClick}
+            onToggleFavorite={handleToggleFavorite}
+            loading={loading}
+            error={error}
+            nameQuery={nameQuery}
+            hasActiveFilters={activeCount > 0}
+            onRetry={() => mapRef.current?.getBounds() && fetchRestaurants(mapRef.current.getBounds()!)}
+          />
+        </BottomSheet>
+      )}
 
       {/* Detail drawer */}
       {selectedPlace && (

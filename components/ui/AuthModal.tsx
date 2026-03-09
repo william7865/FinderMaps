@@ -59,6 +59,7 @@ function InputRow({ icon, type, placeholder, value, onChange, right }: {
         onChange={e => onChange(e.target.value)}
         style={{ paddingLeft: 34, paddingRight: right ? 36 : 14 }}
         autoComplete={type === "password" ? "current-password" : type === "email" ? "email" : "name"}
+        aria-label={placeholder}
       />
       {right && (
         <span style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"flex",cursor:"pointer" }}>{right}</span>
@@ -173,7 +174,7 @@ export default function AuthModal({ onClose, auth, onSuccess, onError }: Props) 
               {mode === "signin" ? "Sign in to sync your favourites" : "Save your favourite spots forever"}
             </p>
           </div>
-          <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"var(--ink-3)",padding:4,display:"flex",marginTop:2 }}>
+          <button onClick={onClose} aria-label="Close" style={{ background:"none",border:"none",cursor:"pointer",color:"var(--ink-3)",padding:4,display:"flex",marginTop:2 }}>
             <IcoX />
           </button>
         </div>

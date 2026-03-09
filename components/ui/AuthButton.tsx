@@ -115,23 +115,38 @@ function DropdownPanel({ anchorRef, auth, onClose }: PanelProps) {
 
       {/* Items */}
       <div style={{ padding: "5px 0" }}>
-        <a href="/account" onClick={onClose}
-          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", transition: "background 80ms" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          My account
-        </a>
+        {/* Primary nav */}
+        {[
+          { href: "/account",   label: "My account",   icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+          { href: "/favorites", label: "Saved places", icon: <span style={{ color: "var(--accent)", display: "flex" }}><IcoHeart /></span> },
+          { href: "/settings",  label: "Settings",     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> },
+        ].map(({ href, label, icon }) => (
+          <a key={href} href={href} onClick={onClose}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", transition: "background 80ms" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+          >
+            {icon}
+            {label}
+          </a>
+        ))}
 
-        <a href="/favorites" onClick={onClose}
-          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 600, color: "var(--ink-2)", transition: "background 80ms" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-        >
-          <span style={{ color: "var(--accent)", display: "flex" }}><IcoHeart /></span>
-          Saved places
-        </a>
+        <div style={{ height: 1, background: "var(--b1)", margin: "3px 8px" }}/>
+
+        {/* Secondary nav */}
+        {[
+          { href: "/help",    label: "Help & FAQ" },
+          { href: "/about",   label: "About Forkmap" },
+          { href: "/contact", label: "Contact" },
+        ].map(({ href, label }) => (
+          <a key={href} href={href} onClick={onClose}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", textDecoration: "none", fontSize: 12, fontWeight: 500, color: "var(--ink-3)", transition: "background 80ms" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+          >
+            {label}
+          </a>
+        ))}
 
         <div style={{ height: 1, background: "var(--b1)", margin: "3px 8px" }}/>
 
