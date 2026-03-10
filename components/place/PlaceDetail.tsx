@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import HeartButton from "@/components/ui/HeartButton";
-import type { PlaceCard } from "@/types";
+import type { PlaceCard, FoursquarePhoto } from "@/types";
 
 type TransportMode = "foot" | "bike" | "car";
 interface RouteResult { duration:number; distance:number; coords:[number,number][]; }
@@ -29,6 +29,8 @@ const IcoClock = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="non
 const IcoArrow = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
 const IcoRoute = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>;
 const IcoStar = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+const IcoChevLeft  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>;
+const IcoChevRight = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>;
 
 const MODES: { id:TransportMode; icon:React.ReactNode; label:string; gmaps:string }[] = [
   { id:"foot",  icon:<IcoWalk />, label:"Walk",  gmaps:"walking"   },
@@ -44,6 +46,91 @@ function fmt(secs:number) {
 }
 function fmtDist(m:number) {
   return m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(1)} km`;
+}
+
+// ── Photo gallery ──────────────────────────────────────────
+function buildPhotoUrl(photo: FoursquarePhoto, width = 600): string {
+  return `${photo.prefix}${width}x${Math.round(width * (photo.height / photo.width))}${photo.suffix}`;
+}
+
+function PhotoGallery({ photos }: { photos: FoursquarePhoto[] }) {
+  const [idx, setIdx]       = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [error,  setError]  = useState(false);
+
+  // Reset when photos change (new place selected)
+  useEffect(() => { setIdx(0); setLoaded(false); setError(false); }, [photos]);
+
+  if (!photos.length) return null;
+
+  const photo = photos[idx];
+  const url   = buildPhotoUrl(photo, 600);
+  const total = photos.length;
+
+  const prev = (e: React.MouseEvent) => { e.stopPropagation(); setIdx(i => (i - 1 + total) % total); setLoaded(false); setError(false); };
+  const next = (e: React.MouseEvent) => { e.stopPropagation(); setIdx(i => (i + 1) % total); setLoaded(false); setError(false); };
+
+  return (
+    <div style={{ position:"relative", width:"100%", aspectRatio:"16/9", background:"var(--surface-3)", overflow:"hidden", flexShrink:0 }}>
+      {/* Placeholder shimmer while loading */}
+      {!loaded && !error && (
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(90deg,var(--surface-3) 0%,var(--surface-2) 40%,var(--surface-3) 80%)", backgroundSize:"300% 100%", animation:"shimmer 1.4s ease-in-out infinite" }}/>
+      )}
+      {/* Error state */}
+      {error && (
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:6 }}>
+          <span style={{ fontSize:24 }}>🍽</span>
+          <span style={{ fontSize:10, color:"var(--ink-4)", fontWeight:600 }}>No photo available</span>
+        </div>
+      )}
+      {/* Photo */}
+      {!error && (
+        <img
+          key={url}
+          src={url}
+          alt={`Photo ${idx + 1}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => { setLoaded(true); setError(true); }}
+          style={{
+            position:"absolute", inset:0, width:"100%", height:"100%",
+            objectFit:"cover",
+            opacity: loaded ? 1 : 0,
+            transition:"opacity 300ms ease",
+          }}
+        />
+      )}
+      {/* Navigation arrows — only if > 1 photo */}
+      {total > 1 && !error && (
+        <>
+          <button onClick={prev} aria-label="Previous photo" style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)", width:28, height:28, borderRadius:"50%", background:"rgba(28,25,23,0.55)", border:"none", color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)", transition:"background 120ms" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(28,25,23,0.8)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "rgba(28,25,23,0.55)")}>
+            <IcoChevLeft />
+          </button>
+          <button onClick={next} aria-label="Next photo" style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", width:28, height:28, borderRadius:"50%", background:"rgba(28,25,23,0.55)", border:"none", color:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)", transition:"background 120ms" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(28,25,23,0.8)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "rgba(28,25,23,0.55)")}>
+            <IcoChevRight />
+          </button>
+          {/* Dot indicators */}
+          <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:4 }}>
+            {photos.slice(0, 5).map((_, i) => (
+              <button key={i} onClick={e => { e.stopPropagation(); setIdx(i); setLoaded(false); setError(false); }}
+                aria-label={`Photo ${i + 1}`}
+                style={{ width: i === idx ? 14 : 6, height:6, borderRadius:3, background: i === idx ? "white" : "rgba(255,255,255,0.45)", border:"none", cursor:"pointer", padding:0, transition:"all 200ms ease" }}/>
+            ))}
+            {total > 5 && (
+              <span style={{ fontSize:9, color:"rgba(255,255,255,0.7)", fontWeight:700, lineHeight:"6px" }}>+{total - 5}</span>
+            )}
+          </div>
+        </>
+      )}
+      {/* Attribution */}
+      <div style={{ position:"absolute", bottom:4, right:8, fontSize:9, color:"rgba(255,255,255,0.55)", fontWeight:500 }}>
+        📷 Foursquare
+      </div>
+    </div>
+  );
 }
 
 // Animated rating bar
@@ -82,6 +169,7 @@ export default function PlaceDetail({
 }: Props) {
   const cuisine = place.cuisine ?? place.fsq?.categories?.[0]?.name;
   const currentMode = MODES.find(m => m.id === routeMode) ?? MODES[0];
+  const photos = place.fsq?.photos ?? [];
 
   return (
     <div
@@ -98,6 +186,9 @@ export default function PlaceDetail({
     >
       {/* ── Gradient accent top bar ── */}
       <div style={{ height:3, background:"linear-gradient(90deg,var(--brand) 0%,#d4880a 100%)", flexShrink:0 }}/>
+
+      {/* ── Photo gallery (Foursquare) ── */}
+      {photos.length > 0 && <PhotoGallery photos={photos} />}
 
       {/* ── HEADER ─────────────────────────────────── */}
       <div style={{ padding:"16px 16px 14px", flexShrink:0 }}>
@@ -320,6 +411,7 @@ export default function PlaceDetail({
           View on OpenStreetMap
         </a>
       </div>
+      <style>{`@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }`}</style>
     </div>
   );
 }

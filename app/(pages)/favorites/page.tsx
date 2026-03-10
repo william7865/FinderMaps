@@ -8,8 +8,20 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FavoriteRow } from "@/types";
-import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
+import { getSupabaseBrowserClient } from "@/lib/hooks/useAuth";
+
+// Helper to get Authorization header
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const sb = getSupabaseBrowserClient();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) return {};
+    return { "Authorization": `Bearer ${session.access_token}` };
+  } catch {
+    return {};
+  }
+}
 
 // ── Icons ──────────────────────────────────────────────────
 const IcoArrowLeft = () => (
@@ -252,10 +264,11 @@ export default function FavoritesPage() {
   const [sortBy,    setSortBy]    = useState<SortKey>("date_desc");
   const [toDelete,  setToDelete]  = useState<FavoriteRow | null>(null);
 
-  const loadFavorites = () => {
+  const loadFavorites = async () => {
     setLoading(true);
     setFetchError(null);
-    fetch("/api/favorites")
+    const authHeaders = await getAuthHeaders();
+    fetch("/api/favorites", { headers: authHeaders })
       .then(r => { if (!r.ok) throw new Error(`Error ${r.status}`); return r.json(); })
       .then(d => setFavorites(d.data ?? []))
       .catch(e => setFetchError(e.message ?? "Failed to load saved places"))
@@ -294,7 +307,11 @@ export default function FavoritesPage() {
 
   const handleRemoveConfirm = async () => {
     if (!toDelete) return;
-    await fetch(`/api/favorites/${encodeURIComponent(toDelete.osm_id)}`, { method: "DELETE" });
+    const authHeaders = await getAuthHeaders();
+    await fetch(`/api/favorites/${encodeURIComponent(toDelete.osm_id)}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
     setFavorites(prev => prev.filter(f => f.osm_id !== toDelete.osm_id));
     setToDelete(null);
   };

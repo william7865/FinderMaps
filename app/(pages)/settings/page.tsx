@@ -101,10 +101,37 @@ export default function SettingsPage() {
   const deleteAccount = async () => {
     if (deleteEmail !== user.email) return;
     setDeleting(true);
-    // Delete all user data first
-    await fetch("/api/favorites", { method: "DELETE" }).catch(() => {});
-    await auth.signOut();
-    router.replace("/");
+
+    try {
+      // Get the current session token to authenticate the request
+      const sb = getSupabaseBrowserClient();
+      const { data: { session } } = await sb.auth.getSession();
+      const authHeader = session?.access_token
+        ? { "Authorization": `Bearer ${session.access_token}` }
+        : {};
+
+      // This calls DELETE /api/account which:
+      // 1. Deletes all favorites from the DB
+      // 2. Deletes the Supabase Auth user (permanent, GDPR Art. 17)
+      const res = await fetch("/api/account", {
+        method: "DELETE",
+        headers: authHeader,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? "Failed to delete account. Please try again or contact support.");
+        setDeleting(false);
+        return;
+      }
+
+      // Sign out locally after server confirms deletion
+      await auth.signOut();
+      router.replace("/");
+    } catch {
+      alert("An unexpected error occurred. Please try again.");
+      setDeleting(false);
+    }
   };
 
   return (

@@ -14,10 +14,26 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { PlaceCard, FilterState, PlaceBase, FavoriteRow } from "@/types";
 import { annotateDistances, annotateScores, applyFilters } from "@/lib/scoring";
+import { getSupabaseBrowserClient } from "@/lib/hooks/useAuth";
 
 interface BBox {
   minLon: number; minLat: number; maxLon: number; maxLat: number;
   centerLat: number; centerLon: number;
+}
+
+/**
+ * Get the Authorization header for the current session.
+ * Returns { Authorization: "Bearer <token>" } or {} if not logged in.
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const sb = getSupabaseBrowserClient();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) return {};
+    return { "Authorization": `Bearer ${session.access_token}` };
+  } catch {
+    return {};
+  }
 }
 
 const REFETCH_THRESHOLD = 0.004;
@@ -40,9 +56,20 @@ export function useRestaurants() {
   const [error,          setError]          = useState<string | null>(null);
   const [favoriteIds,    setFavoriteIds]    = useState<Set<string>>(new Set());
 
-  const currentFilters = useRef<FilterState>({ sortBy: "score" });
-  const lastBbox       = useRef<BBox | null>(null);
-  const fetchCount     = useRef(0);
+  const currentFilters  = useRef<FilterState>({ sortBy: "score" });
+  const lastBbox        = useRef<BBox | null>(null);
+  const fetchCount      = useRef(0);
+  // Ref mirror of favoriteIds — lets fetchRestaurants read the latest value
+  // without being in its dependency array, preventing a new function reference
+  // (and thus a spurious re-fetch) on every favorite toggle.
+  const favoriteIdsRef  = useRef<Set<string>>(new Set());
+
+  // Keep ref in sync with state
+  // (state is still needed for re-render; ref is for stable closure reads)
+  const updateFavoriteIds = (ids: Set<string>) => {
+    favoriteIdsRef.current = ids;
+    setFavoriteIds(ids);
+  };
 
   // ── Restore favourites from DB on every mount ──────────────
   // Next.js navigation unmounts/remounts this hook, clearing the
@@ -51,27 +78,34 @@ export function useRestaurants() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/favorites")
-      .then(r => r.ok ? r.json() : null)
-      .then((data: { data?: FavoriteRow[] } | null) => {
-        if (cancelled || !data?.data) return;
+    getAuthHeaders().then(authHeaders => {
+      if (cancelled) return;
+      fetch("/api/favorites", { headers: authHeaders })
+        .then(r => {
+          // 401 = not logged in — completely normal, just skip silently
+          if (r.status === 401) return null;
+          return r.ok ? r.json() : null;
+        })
+        .then((data: { data?: FavoriteRow[] } | null) => {
+          if (cancelled || !data?.data) return;
 
-        const ids = new Set(data.data.map(row => row.osm_id));
+          const ids = new Set(data.data.map(row => row.osm_id));
 
-        setFavoriteIds(ids);
+          updateFavoriteIds(ids);
 
-        // Re-annotate places already in state (race: map may load before API reply)
-        const reannotate = (arr: PlaceCard[]) =>
-          arr.length > 0
-            ? arr.map(p => ({ ...p, is_favorite: ids.has(p.osm_id) }))
-            : arr;
+          // Re-annotate places already in state (race: map may load before API reply)
+          const reannotate = (arr: PlaceCard[]) =>
+            arr.length > 0
+              ? arr.map(p => ({ ...p, is_favorite: ids.has(p.osm_id) }))
+              : arr;
 
-        setPlaces(reannotate);
-        setFilteredPlaces(reannotate);
-      })
-      .catch(() => {
-        // Silently ignore — hearts just won't pre-populate if API is down
-      });
+          setPlaces(reannotate);
+          setFilteredPlaces(reannotate);
+        })
+        .catch(() => {
+          // Silently ignore — hearts just won't pre-populate if API is down
+        });
+    });
 
     return () => { cancelled = true; };
   }, []); // intentionally empty — run once on mount only
@@ -100,7 +134,7 @@ export function useRestaurants() {
 
       const raw = annotateScores(
         annotateDistances(
-          osmPlaces.map(p => ({ ...p, is_favorite: favoriteIds.has(p.osm_id) })),
+          osmPlaces.map(p => ({ ...p, is_favorite: favoriteIdsRef.current.has(p.osm_id) })),
           bbox.centerLat, bbox.centerLon
         )
       );
@@ -136,10 +170,10 @@ export function useRestaurants() {
         if (fetchCount.current !== myFetch) return;
         const combined = osmPlaces.map(orig => {
           const found = enriched.find(e => e.osm_id === orig.osm_id);
-          return found ?? { ...orig, is_favorite: favoriteIds.has(orig.osm_id) };
+          return found ?? { ...orig, is_favorite: favoriteIdsRef.current.has(orig.osm_id) };
         });
         const scored  = annotateScores(annotateDistances(combined, bbox.centerLat, bbox.centerLon));
-        const withFav = scored.map(p => ({ ...p, is_favorite: favoriteIds.has(p.osm_id) }));
+        const withFav = scored.map(p => ({ ...p, is_favorite: favoriteIdsRef.current.has(p.osm_id) }));
         setPlaces(withFav);
         setFilteredPlaces(applyFilters(withFav, currentFilters.current));
       }
@@ -154,7 +188,9 @@ export function useRestaurants() {
         setEnriching(false);
       }
     }
-  }, [favoriteIds]);
+  // favoriteIdsRef is a ref — stable reference, not a dep.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Client-side filter ─────────────────────────────────────
   const applyClientFilters = useCallback((filters: FilterState) => {
@@ -163,42 +199,59 @@ export function useRestaurants() {
   }, [places]);
 
   // ── Favourite toggle ────────────────────────────────────────
-  const toggleFavorite = useCallback(async (place: PlaceCard) => {
+  const toggleFavorite = useCallback(async (place: PlaceCard): Promise<"ok" | "auth_required" | "error"> => {
     const isFav = favoriteIds.has(place.osm_id);
 
     const flip = (arr: PlaceCard[]) =>
       arr.map(p => p.osm_id === place.osm_id ? { ...p, is_favorite: !isFav } : p);
 
+    const revert = (arr: PlaceCard[]) =>
+      arr.map(p => p.osm_id === place.osm_id ? { ...p, is_favorite: isFav } : p);
+
     // Optimistic update — both arrays so list re-renders immediately
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      isFav ? next.delete(place.osm_id) : next.add(place.osm_id);
-      return next;
-    });
+    const nextIds = new Set(favoriteIds);
+    isFav ? nextIds.delete(place.osm_id) : nextIds.add(place.osm_id);
+    updateFavoriteIds(nextIds);
     setPlaces(flip);
     setFilteredPlaces(flip);
 
     try {
+      const authHeaders = await getAuthHeaders();
+      let res: Response;
       if (isFav) {
-        await fetch(`/api/favorites/${encodeURIComponent(place.osm_id)}`, { method: "DELETE" });
+        res = await fetch(`/api/favorites/${encodeURIComponent(place.osm_id)}`, {
+          method: "DELETE",
+          headers: authHeaders,
+        });
       } else {
-        await fetch("/api/favorites", {
+        res = await fetch("/api/favorites", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ place }),
         });
       }
+
+      if (res.status === 401) {
+        // Not logged in — rollback optimistic update and signal caller
+        const revertIds = new Set(favoriteIds);
+        updateFavoriteIds(revertIds);
+        setPlaces(revert);
+        setFilteredPlaces(revert);
+        return "auth_required";
+      }
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      return "ok";
     } catch {
       // Rollback on network error
-      const revert = (arr: PlaceCard[]) =>
-        arr.map(p => p.osm_id === place.osm_id ? { ...p, is_favorite: isFav } : p);
-      setFavoriteIds(prev => {
-        const next = new Set(prev);
-        isFav ? next.add(place.osm_id) : next.delete(place.osm_id);
-        return next;
-      });
+      const revertIds = new Set(favoriteIds);
+      updateFavoriteIds(revertIds);
       setPlaces(revert);
       setFilteredPlaces(revert);
+      return "error";
     }
   }, [favoriteIds]);
 

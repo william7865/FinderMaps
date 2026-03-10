@@ -1,14 +1,13 @@
 // ============================================================
 // lib/hooks/useAuth.ts
 // Supabase Auth hook — email/password + Google OAuth
-// Works with Supabase's built-in auth (no NextAuth needed)
+// Added: resetPassword() for "Forgot password?" flow
 // ============================================================
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient, type SupabaseClient, type User, type Session } from "@supabase/supabase-js";
 
-// ── Browser client (anon key, safe to expose) ─────────────
 function getClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -21,19 +20,18 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   return _client;
 }
 
-// ── Types ──────────────────────────────────────────────────
 export interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  // Actions
-  signInWithEmail: (email: string, password: string) => Promise<string | null>;
-  signUpWithEmail: (email: string, password: string, name?: string) => Promise<string | null>;
+  signInWithEmail:  (email: string, password: string) => Promise<string | null>;
+  signUpWithEmail:  (email: string, password: string, name?: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<string | null>;
-  signOut: () => Promise<void>;
+  signOut:          () => Promise<void>;
+  /** Send a password reset email. Returns error string or null on success. */
+  resetPassword:    (email: string) => Promise<string | null>;
 }
 
-// ── Hook ───────────────────────────────────────────────────
 export function useAuth(): AuthState {
   const [user,    setUser]    = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -41,20 +39,16 @@ export function useAuth(): AuthState {
   const sb = getSupabaseBrowserClient();
 
   useEffect(() => {
-    // Get initial session
     sb.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
-
-    // Listen to auth changes
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
-
     return () => subscription.unsubscribe();
   }, [sb]);
 
@@ -87,5 +81,14 @@ export function useAuth(): AuthState {
     await sb.auth.signOut();
   }, [sb]);
 
-  return { user, session, loading, signInWithEmail, signUpWithEmail, signInWithGoogle, signOut };
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback?next=/settings`
+        : undefined,
+    });
+    return error?.message ?? null;
+  }, [sb]);
+
+  return { user, session, loading, signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, resetPassword };
 }

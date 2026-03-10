@@ -32,13 +32,27 @@ export default function ContactPage() {
     setError("");
 
     try {
-      // In production: POST to /api/contact which sends via Resend / Mailgun / etc.
-      // For now we simulate a 1s delay and always succeed.
-      await new Promise(r => setTimeout(r, 1000));
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), topic, message: message.trim() }),
+      });
+
+      if (res.status === 429) {
+        setStatus("error");
+        setError("Too many messages sent. Please wait a few minutes before trying again.");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `Server error ${res.status}`);
+      }
+
       setStatus("success");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setError("Failed to send. Please try again or email us directly.");
+      setError(err instanceof Error ? err.message : "Failed to send. Please try again or email us directly.");
     }
   };
 

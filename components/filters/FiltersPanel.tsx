@@ -1,9 +1,26 @@
+// ============================================================
+// components/filters/FiltersPanel.tsx
+// FIX: Cuisine list is now dynamic — built from actual loaded
+// places via extractCuisines(). Falls back to a sensible static
+// list while places are loading (so the select is never empty).
+// ============================================================
 "use client";
-import type { FilterState } from "@/types";
+import type { FilterState, PlaceCard } from "@/types";
+import { extractCuisines } from "@/lib/scoring";
 
-interface Props { filters: FilterState; onChange: (f: FilterState) => void; }
+// Sensible fallback shown before any places load
+const FALLBACK_CUISINES = [
+  "Italian","French","Japanese","Chinese","Indian","Mexican",
+  "Pizza","Burger","Thai","Sushi","Mediterranean","Korean",
+  "Vegan","Seafood","Lebanese","Turkish",
+];
 
-const CUISINES = ["Italian","French","Japanese","Chinese","Indian","Mexican","Pizza","Burger","Thai","Sushi","Mediterranean","Korean","Vegan","Seafood","Lebanese","Turkish"];
+interface Props {
+  filters: FilterState;
+  onChange: (f: FilterState) => void;
+  /** Live-loaded places — used to build the cuisine list dynamically */
+  places?: PlaceCard[];
+}
 
 const FieldLabel = ({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) => (
   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
@@ -12,9 +29,14 @@ const FieldLabel = ({ children, aside }: { children: React.ReactNode; aside?: Re
   </div>
 );
 
-export default function FiltersPanel({ filters, onChange }: Props) {
+export default function FiltersPanel({ filters, onChange, places = [] }: Props) {
   const u = (p: Partial<FilterState>) => onChange({ ...filters, ...p });
   const hasActive = Object.keys(filters).some(k => k !== "sortBy" && filters[k as keyof FilterState] != null);
+
+  // Build cuisine list from real data; fall back to static list if nothing loaded yet
+  const cuisines = places.length > 0
+    ? extractCuisines(places)
+    : FALLBACK_CUISINES;
 
   const selectStyle: React.CSSProperties = {
     width:"100%", background:"var(--surface-2)", color:"var(--ink-1)",
@@ -81,12 +103,14 @@ export default function FiltersPanel({ filters, onChange }: Props) {
         </div>
       </div>
 
-      {/* Cuisine */}
+      {/* Cuisine — dynamic from real data */}
       <div>
-        <FieldLabel>Cuisine</FieldLabel>
+        <FieldLabel aside={places.length > 0 ? `${cuisines.length} types` : undefined}>
+          Cuisine
+        </FieldLabel>
         <select value={filters.cuisine ?? ""} onChange={e => u({ cuisine: e.target.value || undefined })} style={selectStyle}>
           <option value="">All cuisines</option>
-          {CUISINES.map(c => <option key={c} value={c}>{c}</option>)}
+          {cuisines.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 

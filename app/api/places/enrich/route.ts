@@ -1,39 +1,38 @@
 // ============================================================
 // app/api/places/enrich/route.ts — POST /api/places/enrich
-// ============================================================
-// Body: { places: PlaceBase[] }
-// Returns: { data: PlaceCard[], enriched_count, cached_count }
+// Rate limiting added: 20 requests/min per IP.
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { enrichPlaces } from "@/lib/foursquare";
+import { rateLimit } from "@/lib/rate-limit";
 import type { EnrichApiResponse, PlaceBase } from "@/types";
 
-// ---------- Validation ----------
-
 const PlaceBaseSchema = z.object({
-  osm_id: z.string(),
-  osm_type: z.enum(["node", "way", "relation"]),
-  name: z.string(),
-  lat: z.number(),
-  lon: z.number(),
-  tags: z.record(z.string()),
-  cuisine: z.string().optional(),
+  osm_id:        z.string(),
+  osm_type:      z.enum(["node", "way", "relation"]),
+  name:          z.string(),
+  lat:           z.number(),
+  lon:           z.number(),
+  tags:          z.record(z.string()),
+  cuisine:       z.string().optional(),
   opening_hours: z.string().optional(),
-  website: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  open_now: z.boolean().optional(),
+  website:       z.string().optional(),
+  phone:         z.string().optional(),
+  address:       z.string().optional(),
+  open_now:      z.boolean().optional(),
 });
 
 const BodySchema = z.object({
   places: z.array(PlaceBaseSchema).max(50, "Max 50 places per request"),
 });
 
-// ---------- Handler ----------
-
 export async function POST(req: NextRequest): Promise<NextResponse<EnrichApiResponse>> {
+  // Enrichment is expensive — 20 batches/min is plenty for normal browsing
+  const limited = rateLimit(req, { limit: 20, windowMs: 60_000 });
+  if (limited) return limited;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -52,7 +51,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<EnrichApiResp
   const { places } = parsed.data as { places: PlaceBase[] };
 
   if (!process.env.FOURSQUARE_API_KEY) {
-    // No FSQ key — return places as-is without enrichment
     return NextResponse.json({
       data: places.map((p) => ({ ...p })),
       enriched_count: 0,

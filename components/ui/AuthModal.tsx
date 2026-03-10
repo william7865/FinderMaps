@@ -42,7 +42,7 @@ const IcoUser = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
 );
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "forgot";
 
 function InputRow({ icon, type, placeholder, value, onChange, right }: {
   icon: React.ReactNode; type: string; placeholder: string;
@@ -79,13 +79,14 @@ function Divider() {
 }
 
 export default function AuthModal({ onClose, auth, onSuccess, onError }: Props) {
-  const [mode,     setMode]     = useState<Mode>("signin");
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
-  const [name,     setName]     = useState("");
-  const [showPw,   setShowPw]   = useState(false);
-  const [busy,     setBusy]     = useState(false);
-  const [fieldErr, setFieldErr] = useState<string | null>(null);
+  const [mode,       setMode]       = useState<Mode>("signin");
+  const [email,      setEmail]      = useState("");
+  const [password,   setPassword]   = useState("");
+  const [name,       setName]       = useState("");
+  const [showPw,     setShowPw]     = useState(false);
+  const [busy,       setBusy]       = useState(false);
+  const [fieldErr,   setFieldErr]   = useState<string | null>(null);
+  const [resetSent,  setResetSent]  = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Close on overlay click
@@ -99,7 +100,21 @@ export default function AuthModal({ onClose, auth, onSuccess, onError }: Props) 
     return () => document.removeEventListener("keydown", fn);
   }, [onClose]);
 
-  const switchMode = (m: Mode) => { setMode(m); setFieldErr(null); setEmail(""); setPassword(""); setName(""); };
+  const switchMode = (m: Mode) => { setMode(m); setFieldErr(null); setEmail(""); setPassword(""); setName(""); setResetSent(false); };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFieldErr(null);
+    if (!email.trim()) { setFieldErr("Please enter your email address."); return; }
+    setBusy(true);
+    const err = await auth.resetPassword(email);
+    setBusy(false);
+    if (err) {
+      setFieldErr(err);
+    } else {
+      setResetSent(true);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,10 +183,14 @@ export default function AuthModal({ onClose, auth, onSuccess, onError }: Props) 
         <div style={{ padding: "20px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: "-0.04em", color: "var(--ink-1)" }}>
-              {mode === "signin" ? "Welcome back" : "Create account"}
+              {mode === "signin" ? "Welcome back" : mode === "signup" ? "Create account" : "Reset password"}
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--ink-3)" }}>
-              {mode === "signin" ? "Sign in to sync your favourites" : "Save your favourite spots forever"}
+              {mode === "signin"
+                ? "Sign in to sync your favourites"
+                : mode === "signup"
+                ? "Save your favourite spots forever"
+                : "We'll send you a reset link"}
             </p>
           </div>
           <button onClick={onClose} aria-label="Close" style={{ background:"none",border:"none",cursor:"pointer",color:"var(--ink-3)",padding:4,display:"flex",marginTop:2 }}>
@@ -180,59 +199,111 @@ export default function AuthModal({ onClose, auth, onSuccess, onError }: Props) 
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <form onSubmit={mode === "forgot" ? handleForgotPassword : handleSubmit} style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* Google */}
-          <button type="button" className="btn-secondary" onClick={handleGoogle} disabled={busy}>
-            <IcoGoogle />
-            Continue with Google
-          </button>
-
-          <Divider />
-
-          {/* Name (signup only) */}
-          {mode === "signup" && (
-            <InputRow icon={<IcoUser />} type="text" placeholder="Full name (optional)" value={name} onChange={setName} />
+          {/* ── FORGOT PASSWORD VIEW ── */}
+          {mode === "forgot" && (
+            <>
+              {resetSent ? (
+                <div style={{ padding: "20px 16px", borderRadius: 12, background: "rgba(27,127,79,0.06)", border: "1px solid rgba(27,127,79,0.18)", textAlign: "center" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📬</div>
+                  <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: "#1b7f4f" }}>Check your inbox</p>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
+                    We sent a reset link to <strong>{email}</strong>.<br/>
+                    It may take a minute to arrive.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <InputRow icon={<IcoMail />} type="email" placeholder="Email address" value={email} onChange={setEmail} />
+                  {fieldErr && (
+                    <p style={{ margin: 0, fontSize: 12, color: "var(--red)", fontWeight: 600, padding: "6px 10px", background: "var(--red-light)", borderRadius: "var(--r-sm)", border: "1px solid rgba(197,48,48,0.2)" }}>
+                      {fieldErr}
+                    </p>
+                  )}
+                  <button type="submit" className="btn-primary" disabled={busy} style={{ marginTop: 4 }}>
+                    {busy
+                      ? <span style={{ width:14,height:14,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin 0.7s linear infinite",display:"inline-block" }}/>
+                      : "Send reset link"
+                    }
+                  </button>
+                </>
+              )}
+              <p style={{ margin: 0, textAlign: "center", fontSize: 12, color: "var(--ink-3)" }}>
+                <button type="button" onClick={() => switchMode("signin")}
+                  style={{ background:"none",border:"none",cursor:"pointer",color:"var(--brand)",fontWeight:700,fontSize:"inherit",padding:0 }}>
+                  ← Back to sign in
+                </button>
+              </p>
+            </>
           )}
 
-          <InputRow icon={<IcoMail />} type="email" placeholder="Email address" value={email} onChange={setEmail} />
-
-          <InputRow
-            icon={<IcoLock />}
-            type={showPw ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={setPassword}
-            right={
-              <button type="button" onClick={() => setShowPw(v => !v)} style={{ background:"none",border:"none",cursor:"pointer",color:"var(--ink-3)",display:"flex",padding:0 }}>
-                <IcoEye show={showPw} />
+          {/* ── SIGN IN / SIGN UP VIEW ── */}
+          {mode !== "forgot" && (
+            <>
+              {/* Google */}
+              <button type="button" className="btn-secondary" onClick={handleGoogle} disabled={busy}>
+                <IcoGoogle />
+                Continue with Google
               </button>
-            }
-          />
 
-          {/* Error */}
-          {fieldErr && (
-            <p style={{ margin: 0, fontSize: 12, color: "var(--red)", fontWeight: 600, padding: "6px 10px", background: "var(--red-light)", borderRadius: "var(--r-sm)", border: "1px solid rgba(197,48,48,0.2)" }}>
-              {fieldErr}
-            </p>
+              <Divider />
+
+              {/* Name (signup only) */}
+              {mode === "signup" && (
+                <InputRow icon={<IcoUser />} type="text" placeholder="Full name (optional)" value={name} onChange={setName} />
+              )}
+
+              <InputRow icon={<IcoMail />} type="email" placeholder="Email address" value={email} onChange={setEmail} />
+
+              <InputRow
+                icon={<IcoLock />}
+                type={showPw ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={setPassword}
+                right={
+                  <button type="button" onClick={() => setShowPw(v => !v)} style={{ background:"none",border:"none",cursor:"pointer",color:"var(--ink-3)",display:"flex",padding:0 }}>
+                    <IcoEye show={showPw} />
+                  </button>
+                }
+              />
+
+              {/* Forgot password link — only in sign-in mode */}
+              {mode === "signin" && (
+                <div style={{ textAlign: "right", marginTop: -4 }}>
+                  <button type="button" onClick={() => switchMode("forgot")}
+                    style={{ background:"none",border:"none",cursor:"pointer",color:"var(--ink-3)",fontWeight:600,fontSize:11,padding:0 }}>
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              {/* Error */}
+              {fieldErr && (
+                <p style={{ margin: 0, fontSize: 12, color: "var(--red)", fontWeight: 600, padding: "6px 10px", background: "var(--red-light)", borderRadius: "var(--r-sm)", border: "1px solid rgba(197,48,48,0.2)" }}>
+                  {fieldErr}
+                </p>
+              )}
+
+              {/* Submit */}
+              <button type="submit" className="btn-primary" disabled={busy} style={{ marginTop: 4 }}>
+                {busy
+                  ? <span style={{ width:14,height:14,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin 0.7s linear infinite",display:"inline-block" }}/>
+                  : mode === "signin" ? "Sign in" : "Create account"
+                }
+              </button>
+
+              {/* Switch mode */}
+              <p style={{ margin: 0, textAlign: "center", fontSize: 12, color: "var(--ink-3)" }}>
+                {mode === "signin" ? "No account yet? " : "Already have an account? "}
+                <button type="button" onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+                  style={{ background:"none",border:"none",cursor:"pointer",color:"var(--brand)",fontWeight:700,fontSize:"inherit",padding:0 }}>
+                  {mode === "signin" ? "Create one" : "Sign in"}
+                </button>
+              </p>
+            </>
           )}
-
-          {/* Submit */}
-          <button type="submit" className="btn-primary" disabled={busy} style={{ marginTop: 4 }}>
-            {busy
-              ? <span style={{ width:14,height:14,border:"2px solid rgba(255,255,255,0.4)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin 0.7s linear infinite",display:"inline-block" }}/>
-              : mode === "signin" ? "Sign in" : "Create account"
-            }
-          </button>
-
-          {/* Switch mode */}
-          <p style={{ margin: 0, textAlign: "center", fontSize: 12, color: "var(--ink-3)" }}>
-            {mode === "signin" ? "No account yet? " : "Already have an account? "}
-            <button type="button" onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
-              style={{ background:"none",border:"none",cursor:"pointer",color:"var(--brand)",fontWeight:700,fontSize:"inherit",padding:0 }}>
-              {mode === "signin" ? "Create one" : "Sign in"}
-            </button>
-          </p>
         </form>
       </div>
     </div>
